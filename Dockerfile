@@ -1,24 +1,22 @@
-# Gunakan base image yang mendukung Python dan TensorFlow
+# Gunakan image resmi Python sebagai base image
 FROM python:3.8
 
-# Set working directory
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
+
+# Buat dan pindahkan ke direktori kerja /app
 WORKDIR /app
 
-# Salin file dependencies ke working directory
-COPY requirements.txt .
+# Salin file requirements.txt ke dalam container
+COPY requirements.txt /app/
 
-# Install dependencies
+# Install dependensi
 RUN pip install --upgrade pip && \
     pip install -r requirements.txt
 
-# Salin model H5 ke working directory
-COPY model.h5 .
+# Salin seluruh konten ke dalam container
+COPY . /app/
 
-# Salin file Python aplikasi Anda ke working directory
-COPY app.py .
-
-# Ekspose port yang digunakan oleh aplikasi
-EXPOSE 8080
-
-# Jalankan aplikasi saat container dimulai
+# Eksekusi perintah ketika container dijalankan
 CMD ["python", "app.py"]
