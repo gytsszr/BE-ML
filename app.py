@@ -1,81 +1,32 @@
-import os
-from flask import Flask, jsonify, request
-from pdf2image import convert_from_path
-from deepface import DeepFace
+from flask import Flask, request, jsonify
+from tensorflow.keras.models import load_model
+import numpy as np
 
 app = Flask(__name__)
 
-CONFIG = {
-    "UPLOAD_FOLDER": "static/"
-}
+# Load the pre-trained model
+model = load_model('model.h5')
 
-def extract_text_from_pdf(pdf_path):
-    # Gunakan perpustakaan parsing PDF untuk mengekstrak teks dari file PDF
-    images = convert_from_path(pdf_path)
-    text = ""
-    for img in images:
-        text += DeepFace.text(img)
-    return text
-
-@app.route("/")
-def index():
-    return jsonify({
-        "status_code": 200,
-        "message": "Berhasil mengambil API",
-        "data": None
-    }), 200
-
-@app.route("/predict", methods=["POST"])
+@app.route('/predict', methods=['POST'])
 def predict():
-    if request.method == "POST":
-        # Periksa apakah permintaan POST memiliki bagian file
-        if 'resume_pdf' not in request.files:
-            return jsonify({
-                "status_code": 400,
-                "message": "Tidak ada bagian file dalam permintaan",
-                "data": None,
-            }), 400
+    try:
+        # Get input data from request
+        data = request.get_json()
 
-        resume_pdf = request.files['resume_pdf']
+        # Preprocess the input data (modify this according to your model's input requirements)
+        input_data = np.array(data['features'])
+        input_data = input_data.reshape((1,) + input_data.shape)
 
-        if resume_pdf.filename == '':
-            return jsonify({
-                "status_code": 400,
-                "message": "Tidak ada file yang dipilih",
-                "data": None,
-            }), 400
+        # Make predictions
+        predictions = model.predict(input_data)
 
-        pdf_path = os.path.join(CONFIG['UPLOAD_FOLDER'], resume_pdf.filename)
-        resume_pdf.save(pdf_path)
+        # Post-process the predictions (modify this according to your model's output)
+        result = {'prediction': predictions.tolist()}
 
-        try:
-            # Ekstrak teks dari PDF
-            resume_text = extract_text_from_pdf(pdf_path)
+        return jsonify(result)
 
-            # Lakukan prediksi menggunakan model yang telah dilatih
-            # Gantilah baris berikut dengan logika prediksi sebenarnya Anda
-            hasil_prediksi = {"message": "Gantilah ini dengan logika prediksi Anda", "text": resume_text}
+    except Exception as e:
+        return jsonify({'error': str(e)})
 
-            return jsonify({
-                "status_code": 200,
-                "message": "Berhasil melakukan prediksi",
-                "data": hasil_prediksi
-            }), 200
-        except Exception as e:
-            return jsonify({
-                "status_code": 400,
-                "message": "Gagal melakukan prediksi karena {}".format(str(e)),
-                "data": None,
-            }), 400
-        finally:
-            os.remove(pdf_path)
-
-    else:
-        return jsonify({
-            "status_code": 405,
-            "message": "Metode tidak diizinkan",
-            "data": None
-        }), 405
-
-if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
+if __name__ == '__main__':
+    app.run(debug=True)
