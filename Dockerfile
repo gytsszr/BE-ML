@@ -1,22 +1,20 @@
-# Gunakan image resmi Python sebagai base image
-FROM python:3.8
+# Use the official TensorFlow image as the base image
+FROM tensorflow/tensorflow:latest
 
-# Set environment variables
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
+# Copy the model file into the container
+COPY model.h5 /app/model.h5
 
-# Buat dan pindahkan ke direktori kerja /app
+# Copy the app.py file into the container
+COPY app.py /app/app.py
+
+# Set the working directory to /app
 WORKDIR /app
 
-# Salin file requirements.txt ke dalam container
-COPY requirements.txt /app/
+# Install Flask and other dependencies
+RUN pip install Flask
 
-# Install dependensi
-RUN pip install --upgrade pip && \
-    pip install -r requirements.txt
+# Expose the port on which the application will run
+EXPOSE 8080
 
-# Salin seluruh konten ke dalam container
-COPY . /app/
-
-# Eksekusi perintah ketika container dijalankan
+# Define the command to run the application
 CMD ["python", "app.py"]
